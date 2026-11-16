@@ -1,0 +1,22 @@
+
+
+
+--------------------------------------------------------------------------------------------------------------
+
+topics_invited_users (
+    TRUE - accepted
+    NULL - not answered
+    FALSE - DECLINED,
+
+    Reject new invites sumbition if Declined and answered_at < 7 from now,
+    , Resend invitation but setting: IS_ACCEPTED = NULL
+    
+)
+Check db for invitations when user logs in.
+
+
+
+
+--------------------------------------------------------------------------------------------------------------
+
+Display applied reactions ? HOW
