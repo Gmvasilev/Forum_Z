@@ -1,6 +1,0 @@
-fastapi -> included
-uvicorn -> included
-jinja2
-pydantic[email] -> included
-mariadb -> included
-unittest -> part of standard Python package
