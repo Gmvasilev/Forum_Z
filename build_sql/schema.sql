@@ -1,4 +1,5 @@
 -- TODO: CREATE DATABASE / CREATE TABLE statements
+
 CREATE TABLE replies(
     reply_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     content VARCHAR(8192) NOT NULL,
@@ -28,3 +29,5 @@ CREATE TABLE topic_categories(
     PRIMARY KEY (category_id),
     CONSTRAINT uq_category_name UNIQUE (category_name)
 );
+
+INSERT INTO topic_categories (category_name) VALUES ('General Discussion'),('Issue')
