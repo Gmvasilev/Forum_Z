@@ -33,10 +33,11 @@ CREATE TABLE topic_categories(
 INSERT INTO topic_categories (category_name) VALUES ('General Discussion'),('Issue')
 
 CREATE TABLE reactions(
-    user_id INT NOT NULL,
-    reply_id INT NOT NULL,
+    reaction_id INT UNSIGNED AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    reply_id INT UNSIGNED NOT NULL,
     reaction BOOLEAN NOT NULL,
-    PRIMARY KEY (user_id,reply_id),
+    PRIMARY KEY (reaction_id),
     CONSTRAINT fk_reactions_user
         FOREIGN KEY (user_id) REFERENCES users(user_id)
         ON DELETE CASCADE,
