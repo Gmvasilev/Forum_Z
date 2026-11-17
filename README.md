@@ -28,4 +28,20 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
+
 ```
+
+# DB settings Configuration
+
+```bash
+
+#Windows
+copy .env.example .env
+
+#macOS/ Linux
+cp .env.example .env 
+```
+
+2. Open `.env` and fill in your own values
+
+Settings are loaded and validated by `app/config.py` using [pythantic-settings]
