@@ -53,6 +53,8 @@ CREATE TABLE users(
         COLLATE utf8mb4_unicode_ci
         NOT NULL,
 
+    password_hash VARCHAR(255) NOT NULL,
+
     email VARCHAR(254)
         CHARACTER SET utf8mb4
         COLLATE utf8mb4_general1400_as_ci
@@ -80,6 +82,9 @@ CREATE TABLE users(
 
 	CONSTRAINT chck_username_length
 	   CHECK (CHAR_LENGTH(username) BETWEEN 2 AND 16),
+
+    CONSTRAINT chck_password_hash_length_bcrypt
+        CHECK (CHAR_LENGTH(password_hash) = 60),
 
     CONSTRAINT chck_username_format
         CHECK (username REGEXP '^[A-Za-z0-9_]+$'), 
