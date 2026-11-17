@@ -28,16 +28,16 @@ def insert_query(sql: str, sql_params=()):
 
         return cursor.lastrowid
 
-def update_qury(sql:str, sql_params=()) -> bool:
+def update_query(sql:str, sql_params=()) -> bool:
     with _get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, sql_params)
-        conn.commit
+        conn.commit()
 
-        cursor.rowcout > 0
+        return cursor.rowcout > 0
 
 def delete_query(sql: str, sql_params=()) -> bool:
-    with _get_connection as conn:
+    with _get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(sql, sql_params)
         conn.commit()
