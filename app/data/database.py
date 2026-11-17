@@ -34,7 +34,7 @@ def update_query(sql:str, sql_params=()) -> bool:
         cursor.execute(sql, sql_params)
         conn.commit()
 
-        return cursor.rowcout > 0
+        return cursor.rowcount > 0
 
 def delete_query(sql: str, sql_params=()) -> bool:
     with _get_connection() as conn:
@@ -42,4 +42,4 @@ def delete_query(sql: str, sql_params=()) -> bool:
         cursor.execute(sql, sql_params)
         conn.commit()
 
-        return cursor.rowcout > 0
+        return cursor.rowcount > 0
