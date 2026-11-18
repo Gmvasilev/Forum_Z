@@ -50,4 +50,11 @@ def update_reply(reply_id: int, content: str) -> bool:
     return update_query(
         "UPDATE replies SET content = ? WHERE reply_id =? ",
         (content,reply_id),
+
+    )
+
+def delete_reply(reply_id: int) -> bool:
+    return delete_query(
+        "DELETE FROM replies WHERE reply_id = ?",
+        (reply_id,),
     )
