@@ -20,3 +20,23 @@ def get_by_topic(topic_id: int):
         (topic_id,)
 
     )
+
+def get_by_id(reply_id: int):
+    rows = read_query(
+        """
+        SELECT r.reply_id, r.topic_id, r.author_id,
+            u.username,r.content,r.created_at,
+            COUNT(CASE WHEN rx.reaction = TRUE THEN 1 END) AS likes,
+            COUNT(CASE WHEN rx.reaction = FALSE THEN 1 END) AS dislikes
+        FROM replies r 
+        JOIN users u ON u.user_id = r.author_id
+        LEFT JOIN reactions rx ON rx.reply_id = r.reply_id
+        WHERE r.reply_id = ?
+        GROUP BY r.reply_id, r.topic_id, r.author_id,
+            u.username,r.content,r.created_at
+        """,
+        (reply_id,)
+
+    )
+    return rows[0] if rows else None
+    
