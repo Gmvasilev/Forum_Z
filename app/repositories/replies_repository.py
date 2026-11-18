@@ -45,3 +45,9 @@ def create_reply(content: str, topic_id: int, author_id: int) -> int:
         "INSERT INTO replies (content,topic_id,author_id) VALUES (?,?,?) ",
         (content,topic_id,author_id),
     )
+
+def update_reply(reply_id: int, content: str) -> bool:
+    return update_query(
+        "UPDATE replies SET content = ? WHERE reply_id =? ",
+        (content,reply_id),
+    )
