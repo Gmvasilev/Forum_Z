@@ -40,8 +40,8 @@ def get_by_id(reply_id: int):
     )
     return rows[0] if rows else None
 
-def create_reply(contet: str, topic_id: int, author_id: int) -> int:
+def create_reply(content: str, topic_id: int, author_id: int) -> int:
     return insert_query(
         "INSERT INTO replies (content,topic_id,author_id) VALUES (?,?,?) ",
-        (contet,topic_id,author_id),
+        (content,topic_id,author_id),
     )
