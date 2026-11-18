@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
+import base64
+import hashlib
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
@@ -14,20 +16,29 @@ from app.config import settings
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def hash_password(password: str) -> str:
-    """Hash a plaintext password using bcrypt."""
+def _prepare_password(password: str) -> bytes:
+    """Convert a string password into a 44-byte Base64 SHA-256 digest safe for bcrypt."""
     
+    raw_bytes = password.encode("utf-8") # raw UTF-8 bytes
+    digest = hashlib.sha256(raw_bytes).digest() # 32 bytes long
+    return base64.b64encode(digest) # convert into a 44-byte Base64 ASCII byte string 
 
-    salt = bcrypt.gensalt()
-    # salt is contained in the hash
-    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+
+def hash_password(password: str) -> str:
+    """Hash a string password using SHA-256 pre-hashing and bcrypt."""
+    
+    prepared = _prepare_password(password)
+    salt = bcrypt.gensalt() # salt is contained in the hash
+    hashed = bcrypt.hashpw(prepared, salt)
     return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against a bcrypt hash."""
+    """Verify a plaintext password against a stored bcrypt hash."""
+    
+    prepared = _prepare_password(plain_password)
     return bcrypt.checkpw(
-        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        prepared, hashed_password.encode("utf-8")
     )
 
 
