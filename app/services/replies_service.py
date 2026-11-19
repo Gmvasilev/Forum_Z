@@ -23,3 +23,11 @@ def create_reply(topic_id: int, data: ReplyCreate, user_id: int) -> ReplyRespons
 
     reply_id = replies_repository.create_reply(data.content, topic_id, user_id)
     return get_reply(reply_id)
+
+def delete_reply(user_id: int, reply_id, role: str) -> bool | None:
+    reply = get_reply(reply_id)
+    if reply is None:
+        return None
+    if reply.author_id != user_id and role != "admin":
+        return False
+    return replies_repository.delete_reply(reply_id)
