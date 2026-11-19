@@ -1,19 +1,14 @@
 """Password hashing and JWT token utilities."""
 
 from datetime import datetime, timedelta, timezone
-
 import bcrypt
 import jwt
 import base64
 import hashlib
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jwt.exceptions import InvalidTokenError
 
 from app.config import settings
 
-# OAuth2 scheme for extracting Bearer token from Authorization header
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 
 def _prepare_password(password: str) -> bytes:
@@ -42,7 +37,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     )
 
 
-#
+# --- JWT tokek payload : 
+#- "sub"     : user_id 
+#- "username": username
+#- "role"    : user_role
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token with the given payload data."""
     
@@ -64,32 +62,53 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 
 def decode_access_token(token: str) -> dict:
-    """Decode and validate a JWT access token. Raises HTTPException if invalid."""
-    try:
-        payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.algorithm]
-        )
-        return payload
-    
-    except InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials", # schupihte tokena hakeri
-            headers={"WWW-Authenticate": "Bearer"},
-        )   
+    """Decode and validate a JWT access token. Raises InvalidTokenError if invalid."""
 
-#def get_home_page(request: Request)
-def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """FastAPI dependency to get the current authenticated user from a JWT token."""
+    payload = jwt.decode(
+        token, settings.secret_key, algorithms=[settings.algorithm]
+    )
     
-    payload = decode_access_token(token)
-    username: str = payload.get("sub")
-    if username is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    return payload
+
+# def decode_access_token(token: str) -> dict:
+#     """Decode and validate a JWT access token. Raises HTTPException if invalid."""
+#     try:
+#         payload = jwt.decode(
+#             token, settings.secret_key, algorithms=[settings.algorithm]
+#         )
+#         return payload
+    
+#     except InvalidTokenError:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Could not validate credentials", # schupihte tokena hakeri
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )   
+
+# #def get_home_page(request: Request)
+# def get_current_user(
+#     header_token: Annotated[str | None, Depends(oauth2_scheme)] = None,
+#     cookie_token: Annotated[str | None, Cookie(alias="access_token")] = None
+#     ) -> dict | None:
+#     """Extracts and decodes a JWT from the Bearer header or access_token cookie, returning the user dict or None."""
+
+#     token = header_token or cookie_token
+    
+#     payload = decode_access_token(token)
+#     username: str = payload.get("sub")
+#     if username is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Could not validate credentials",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
         
-    # TODO: extract the user_role 
-    return {"username": username}
+#     # TODO:
+#     #userid
+#     #userrole
+#     return {"username": username}
+
+
+
+
+
