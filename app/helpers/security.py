@@ -14,9 +14,9 @@ from app.config import settings
 def _prepare_password(password: str) -> bytes:
     """Convert a string password into a 44-byte Base64 SHA-256 digest safe for bcrypt."""
     
-    raw_bytes = password.encode("utf-8") # raw UTF-8 bytes
-    digest = hashlib.sha256(raw_bytes).digest() # 32 bytes long
-    return base64.b64encode(digest) # convert into a 44-byte Base64 ASCII byte string 
+    raw_bytes = password.encode("utf-8") # convert password to bytes
+    digest = hashlib.sha256(raw_bytes).digest() # generate 256 bits / 8 = 32 raw bytes
+    return base64.b64encode(digest) # re-pack by 6 = 44 safe charecters
 
 
 def hash_password(password: str) -> str:
