@@ -49,9 +49,7 @@ class SortOrder(str, Enum):
     DESC = 'desc'
 
 
-class TopicListQuery(BaseModel):
-    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
-
+class TopicListQuery(StrictInput):
     search: str | None = Field(default=None, max_length= 128)
     category_id: PositiveId | None = None
     sort_by: TopicSortBy = TopicSortBy.CREATED_AT
