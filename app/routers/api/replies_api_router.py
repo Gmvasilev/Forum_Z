@@ -19,3 +19,10 @@ def get_reply(reply_id: id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reply Not found")
 
     return reply
+
+@replies_api_router.post("/topic/{topic_id}/replies", response_model=ReplyResponse,status_code=status.HTTP_201_CREATED,)
+def create_reply(topic_id: int, data: ReplyCreate, current_user: dict = Depends()):
+    #the depends needs a requre user function 
+    #get_current_user returns None or False instead of failing, which is right for public pages. Write endpoints need a stricter one:
+    #topic_is locked validation still needs to be writen
+    return replies_service.create_reply(topic_id,data,current_user["user_id"])
