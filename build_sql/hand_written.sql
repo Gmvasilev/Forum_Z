@@ -62,6 +62,7 @@ CREATE TABLE users(
 
     user_role_id INT UNSIGNED NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_blocked BOOL NOT NULL DEFAULT FALSE,
     is_confirmed BOOL NOT NULL DEFAULT FALSE,
     is_deactivated BOOL NOT NULL DEFAULT FALSE,
 
@@ -93,17 +94,30 @@ CREATE TABLE users(
 	CONSTRAINT chk_email_length
    	    CHECK (CHAR_LENGTH(email) BETWEEN 6 AND 254),
 
-   CONSTRAINT chk_email_format
-   	CHECK (
-      	email REGEXP
-        '^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$'
-   	),
 
 	CONSTRAINT chk_email_no_consecutive_dots
    	CHECK (email NOT REGEXP '\\.\\.')
 );
 
+-- *****************************************************
+-- ************ CREATE TABLE refresh_tokens ************
+-- *****************************************************
 
+CREATE TABLE refresh_tokens(
+    user_id INT UNSIGNED NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_revoked BOOL NOT NULL DEFAULT FALSE,
+
+    PRIMARY KEY (user_id),
+
+    CONSTRAINT FK_refresh_token_to_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_token_hash UNIQUE(token_hash)
+);
 
 --*********************************************
 --************ CREATE TABLE topics ************
