@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <!-- 1. Read-Only Display View -->
+  <div id="view-mode">
+    <p><strong>First Name:</strong> <span id="disp-first_name">{{ user.first_name }}</span></p>
+    <p><strong>Last Name:</strong> <span id="disp-last_name">{{ user.last_name }}</span></p>
+    <p><strong>Username:</strong> <span id="disp-username">{{ user.username }}</span></p>
+    <p><strong>Email:</strong> <span id="disp-email">{{ user.email }}</span></p>
+
+    <button type="button" onclick="openSection('profile-form')">Change profile info</button>
+    <button type="button" onclick="openSection('password-form')">Change password</button>
+    <p id="status-box" style="color: green;"></p>
+  </div>
+
+  <!-- 2. Profile Edit Form -->
+  <form id="profile-form" hidden onsubmit="saveProfile(event)">
+    <div>
+      <label>First Name:</label>
+      <input name="first_name" value="{{ user.first_name }}" data-original="{{ user.first_name }}" required>
+    </div>
+    <div>
+      <label>Last Name:</label>
+      <input name="last_name" value="{{ user.last_name }}" data-original="{{ user.last_name }}" required>
+    </div>
+    <div>
+      <label>Username:</label>
+      <input name="username" value="{{ user.username }}" data-original="{{ user.username }}" required>
+    </div>
+    <div>
+      <label>Email:</label>
+      <input name="email" type="email" value="{{ user.email }}" data-original="{{ user.email }}" required>
+    </div>
+
+    <p class="error-box" style="color: red;"></p>
+    <button type="submit">Save changes</button>
+    <button type="button" onclick="closeAll()">Cancel</button>
+  </form>
+
+  <!-- 3. Password Change Form -->
+  <form id="password-form" hidden onsubmit="savePassword(event)">
+    <div>
+      <label>Current Password:</label>
+      <input name="current_password" type="password" required>
+    </div>
+    <div>
+      <label>New Password:</label>
+      <input name="new_password" type="password" required>
+    </div>
+
+    <p class="error-box" style="color: red;"></p>
+    <button type="submit">Update password</button>
+    <button type="button" onclick="closeAll()">Cancel</button>
+  </form>
+
+  <script>
+    function openSection(formId) {
+      document.getElementById("view-mode").hidden = true;
+      document.getElementById("status-box").textContent = "";
+      document.getElementById(formId).hidden = false;
+    }
+
+    function closeAll() {
+      document.getElementById("profile-form").hidden = true;
+      document.getElementById("password-form").hidden = true;
+      document.getElementById("password-form").reset();
+      document.querySelectorAll(".error-box").forEach(el => el.textContent = "");
+      document.getElementById("view-mode").hidden = false;
+    }
+
+    function formatError(data) {
+      return Array.isArray(data.detail)
+        ? data.detail.map(e => `${e.loc.at(-1)}: ${e.msg}`).join(" | ")
+        : data.detail;
+    }
+
+    async function saveProfile(event) {
+      event.preventDefault();
+      const form = event.target;
+      const payload = {};
+
+      for (const input of form.elements) {
+        if (input.name && input.value !== input.dataset.original) {
+          payload[input.name] = input.value;
+        }
+      }
+
+      if (Object.keys(payload).length === 0) {
+        closeAll();
+        return;
+      }
+
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        form.querySelector(".error-box").textContent = formatError(data);
+        return;
+      }
+
+      for (const field of ["first_name", "last_name", "username", "email"]) {
+        document.getElementById(`disp-${field}`).textContent = data[field];
+        form.elements[field].value = data[field];
+        form.elements[field].dataset.original = data[field];
+      }
+
+      closeAll();
+      document.getElementById("status-box").textContent = "Profile updated.";
+    }
+
+    async function savePassword(event) {
+      event.preventDefault();
+      const form = event.target;
+
+      const res = await fetch("/api/users/me/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          current_password: form.elements.current_password.value,
+          new_password: form.elements.new_password.value,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        form.querySelector(".error-box").textContent = formatError(data);
+        return;
+      }
+
+      closeAll();
+      document.getElementById("status-box").textContent = "Password changed successfully.";
+    }
+  </script>
+</body>
+</html>

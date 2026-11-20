@@ -1,0 +1,36 @@
+<form action="/register" method="post">
+    
+    <!-- Username Field -->
+    <div class="field">
+        <label>Username</label><br>
+        <input type="text" name="username" 
+               value="{{ form_data.get('username', '') }}"
+               class="{{ 'input-error' if errors.get('username') else '' }}" required>
+        {% if errors.get('username') %}
+            <small class="error">{{ errors['username'] }}</small>
+        {% endif %}
+    </div>
+
+    <!-- Email Field -->
+    <div class="field">
+        <label>Email</label><br>
+        <input type="email" name="email" 
+               value="{{ form_data.get('email', '') }}"
+               class="{{ 'input-error' if errors.get('email') else '' }}" required>
+        {% if errors.get('email') %}
+            <small class="error">{{ errors['email'] }}</small>
+        {% endif %}
+    </div>
+
+    <!-- Password Field -->
+    <div class="field">
+        <label>Password</label><br>
+        <input type="password" name="password" 
+               class="{{ 'input-error' if errors.get('password') else '' }}" required>
+        {% if errors.get('password') %}
+            <small class="error">{{ errors['password'] }}</small>
+        {% endif %}
+    </div>
+
+    <button type="submit">Register</button>
+</form>
