@@ -32,6 +32,19 @@ CREATE TABLE IF NOT EXISTS `reactions` (
 
 -- Dumping data for table forum_z_db.reactions: ~0 rows (approximately)
 
+-- Dumping structure for table forum_z_db.refresh_tokens
+CREATE TABLE IF NOT EXISTS `refresh_tokens` (
+  `user_id` int(10) unsigned NOT NULL,
+  `token_hash` varchar(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `is_revoked` tinyint(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `uq_token_hash` (`token_hash`),
+  CONSTRAINT `FK_refresh_token_to_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+-- Dumping data for table forum_z_db.refresh_tokens: ~0 rows (approximately)
+
 -- Dumping structure for table forum_z_db.replies
 CREATE TABLE IF NOT EXISTS `replies` (
   `reply_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -117,6 +130,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` varchar(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_general1400_as_ci NOT NULL,
   `user_role_id` int(10) unsigned NOT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `is_blocked` tinyint(1) NOT NULL DEFAULT 0,
   `is_confirmed` tinyint(1) NOT NULL DEFAULT 0,
   `is_deactivated` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`user_id`),
@@ -130,7 +144,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   CONSTRAINT `chck_password_hash_length_bcrypt` CHECK (char_length(`password_hash`) = 60),
   CONSTRAINT `chck_username_format` CHECK (`username` regexp '^[A-Za-z0-9_]+$'),
   CONSTRAINT `chk_email_length` CHECK (char_length(`email`) between 6 and 254),
-  CONSTRAINT `chk_email_format` CHECK (`email` regexp '^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$'),
   CONSTRAINT `chk_email_no_consecutive_dots` CHECK (!(`email` regexp '\\.\\.'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
