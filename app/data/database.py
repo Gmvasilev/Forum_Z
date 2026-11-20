@@ -86,21 +86,25 @@ def insert_one_to_one_records(
             raise DatabaseValidationError(user_msg)
         
 
+def atomic_batch(
+    operations: list[tuple[str, tuple]],
+    enforce_affected_rows: bool = False
+):
+    
+    """Execute a collection of SQL commands (INSERT, UPDATE, DELETE) in one transaction.\n
 
-
-#* Note: Unfinished figured out it wont do the job
-#* so im adding: insert one_to_one_records()
-#* Unfinshed: giving meaningfull feedback on what the error is
-def atomic_batch(operations: list[tuple[str, tuple]]):
-    """Commits all changes if every query succeeds, or rolls back the entire\n
-    batch to its original state if any single query fails.
+    Commits all changes if every query succeeds, or rolls back the entire batch\n
+    if any single query fails or (optionally) affects zero rows.
     
     Params:
-        operations: A list of tuples, where each tuple contains
-        a SQL query string and a tuple of its parameters
-        [("INSERT INTO...", (val1, val2)), ...]
-        
+        operations: List of tuples containing the SQL string and its parameters.
+        enforce_affected_rows: If True, raises an error if any query affects 0 rows.
+    Returns:
+        int: The total number of rows affected by all queries combined.
+
     Raises:
+        DatabaseValidationError: If a unique/check constraint is violated or 
+        no rows were affected when enforced.
     """
 
     with _get_connection() as conn:
@@ -111,9 +115,16 @@ def atomic_batch(operations: list[tuple[str, tuple]]):
         try:
             for sql,data in operations:
                 cursor.execute(sql, data)
+                
+                if enforce_affected_rows and cursor.rowcount == 0:
+                    # trigger rollback
+                    raise DatabaseValidationError("Any of the queries didnt affect any rows.")
+                
             conn.commit()
         except Error as e:
             conn.rollback()
+            user_friendly_msg = _parse_mariadb_error(e)
+            raise DatabaseValidationError(user_friendly_msg) from e
             
             
     
