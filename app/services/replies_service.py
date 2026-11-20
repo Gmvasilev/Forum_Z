@@ -39,4 +39,4 @@ def update_reply(user_id: int , reply_id: int, data: str):
     if reply.author_id != user_id:
         return False
     #TODO: need to write a users_service.get_user check to see if user is blocked here
-    return replies_repository.update_reply(reply_id)
+    return replies_repository.update_reply(reply_id,data)
