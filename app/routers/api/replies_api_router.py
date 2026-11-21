@@ -26,3 +26,13 @@ def create_reply(topic_id: int, data: ReplyCreate, current_user: dict = Depends(
     #get_current_user returns None or False instead of failing, which is right for public pages. Write endpoints need a stricter one:
     #topic_is locked validation still needs to be writen
     return replies_service.create_reply(topic_id,data,current_user["user_id"])
+
+@replies_api_router.delete("/replies/{treply_id}", stuatus_code=status.HTTP_204_No_CONTENT)
+def delete_reply(reply_id: int,current_user):
+    #need a current_user function to implement the check for the author
+    result = replies_service.delete_reply(current_user["user_id"], reply_id, current_user["role"])
+
+    if result is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Reply not Found")
+    if result is False:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Not allowed to delete this reply")
