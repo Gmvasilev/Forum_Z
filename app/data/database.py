@@ -19,13 +19,13 @@ def _get_connection() -> Connection:
     )
 
 
-def read_query(sql: str, sql_params=(), contx_session: Connection=None) -> list[tuple]:
+def read_query(sql: str, sql_params=(), connection: Connection=None) -> list[tuple]:
     """ Returns list of table rows as tuples"""
     
     connection_provider = (
         _get_connection()
-        if contx_session is None
-        else nullcontext(contx_session) # nullcontext wraps the sessioncontext taking the hit from the current with block end
+        if connection is None
+        else nullcontext(connection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
     )
     
     with connection_provider as conn:
@@ -43,13 +43,13 @@ def read_query(sql: str, sql_params=(), contx_session: Connection=None) -> list[
             cursor.close()
 
 
-def insert_query(sql: str, sql_params=(), contx_session: Connection=None) -> int:
+def insert_query(sql: str, sql_params=(), connection: Connection=None) -> int:
     """ Returns the last row generated id."""
     
     connection_provider = (
         _get_connection()
-        if contx_session is None
-        else nullcontext(contx_session) # nullcontext wraps the sessioncontext taking the hit from the current with block end
+        if connection is None
+        else nullcontext(connection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
     )
     
     with connection_provider as conn:
@@ -57,7 +57,7 @@ def insert_query(sql: str, sql_params=(), contx_session: Connection=None) -> int
             cursor = conn.cursor()
             cursor.execute(sql, sql_params)
         
-            if contx_session is None:
+            if connection is None:
                 conn.commit()
 
             return cursor.lastrowid
@@ -70,13 +70,13 @@ def insert_query(sql: str, sql_params=(), contx_session: Connection=None) -> int
             cursor.close()
 
 
-def update_query(sql:str, sql_params=(), contx_session: Connection=None) -> bool:
+def update_query(sql:str, sql_params=(), conection: Connection=None) -> bool:
     """ Returns any row affected ?"""
     
     connection_provider = (
         _get_connection()
-        if contx_session is None
-        else nullcontext(contx_session) # nullcontext wraps the sessioncontext taking the hit from the current with block end
+        if conection is None
+        else nullcontext(conection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
     )
     
     with connection_provider as conn:
@@ -84,7 +84,7 @@ def update_query(sql:str, sql_params=(), contx_session: Connection=None) -> bool
             cursor = conn.cursor()
             cursor.execute(sql, sql_params)
             
-            if contx_session is None:
+            if conection is None:
                 conn.commit()
 
             return cursor.rowcount > 0
@@ -97,13 +97,13 @@ def update_query(sql:str, sql_params=(), contx_session: Connection=None) -> bool
             cursor.close()
 
 
-def delete_query(sql: str, sql_params=(), contx_session: Connection=None) -> bool:
+def delete_query(sql: str, sql_params=(), connection: Connection=None) -> bool:
     """ Returns any row affected ?"""
     
     connection_provider = (
         _get_connection()
-        if contx_session is None
-        else nullcontext(contx_session) # nullcontext wraps the sessioncontext taking the hit from the current with block end
+        if connection is None
+        else nullcontext(connection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
     )
     
     with connection_provider as conn:
@@ -112,7 +112,7 @@ def delete_query(sql: str, sql_params=(), contx_session: Connection=None) -> boo
             cursor = conn.cursor()
             cursor.execute(sql, sql_params)
             
-            if contx_session is None:
+            if connection is None:
                 conn.commit()
 
             return cursor.rowcount > 0
