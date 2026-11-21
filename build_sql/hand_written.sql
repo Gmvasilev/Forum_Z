@@ -11,9 +11,9 @@
 -- 9. Triggers
 -- 10.Final foreign key via ALTER TABLE
 
---*************************************************
---************ CREATE TABLE user_roles ************
---*************************************************
+-- *************************************************
+-- ************ CREATE TABLE user_roles ************
+-- *************************************************
 
 CREATE TABLE user_roles(
 	user_role_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -25,9 +25,9 @@ CREATE TABLE user_roles(
 
 
 
---*******************************************************
---************ CREATE TABLE topic_categories ************
---*******************************************************
+-- *******************************************************
+-- ************ CREATE TABLE topic_categories ************
+-- *******************************************************
 
 CREATE TABLE topic_categories(
     category_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -39,9 +39,9 @@ CREATE TABLE topic_categories(
 
 
 
---********************************************
---************ CREATE TABLE users ************
---********************************************
+-- ********************************************
+-- ************ CREATE TABLE users ************
+-- ********************************************
 
 CREATE TABLE users(
     user_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -62,6 +62,7 @@ CREATE TABLE users(
 
     user_role_id INT UNSIGNED NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_blocked BOOL NOT NULL DEFAULT FALSE,
     is_confirmed BOOL NOT NULL DEFAULT FALSE,
     is_deactivated BOOL NOT NULL DEFAULT FALSE,
 
@@ -93,21 +94,34 @@ CREATE TABLE users(
 	CONSTRAINT chk_email_length
    	    CHECK (CHAR_LENGTH(email) BETWEEN 6 AND 254),
 
-   CONSTRAINT chk_email_format
-   	CHECK (
-      	email REGEXP
-        '^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$'
-   	),
 
 	CONSTRAINT chk_email_no_consecutive_dots
    	CHECK (email NOT REGEXP '\\.\\.')
 );
 
+-- *****************************************************
+-- ************ CREATE TABLE refresh_tokens ************
+-- *****************************************************
 
+CREATE TABLE refresh_tokens(
+    user_id INT UNSIGNED NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_revoked BOOL NOT NULL DEFAULT FALSE,
 
---*********************************************
---************ CREATE TABLE topics ************
---*********************************************
+    PRIMARY KEY (user_id),
+
+    CONSTRAINT FK_refresh_token_to_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_token_hash UNIQUE(token_hash)
+);
+
+-- *********************************************
+-- ************ CREATE TABLE topics ************
+-- *********************************************
 
 CREATE TABLE topics(
 	topic_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -140,9 +154,9 @@ CREATE TABLE topics(
 
 
 
---**********************************************
---************ CREATE TABLE replies ************
---**********************************************
+-- **********************************************
+-- ************ CREATE TABLE replies ************
+-- **********************************************
 
 CREATE TABLE replies(
     reply_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -172,9 +186,9 @@ CREATE TABLE replies(
 
 
 
---************************************************
---************ CREATE TABLE reactions ************
---************************************************
+-- ************************************************
+-- ************ CREATE TABLE reactions ************
+-- ************************************************
 
 CREATE TABLE reactions(
     user_id INT UNSIGNED NOT NULL,
@@ -193,9 +207,9 @@ CREATE TABLE reactions(
 
 
 
---************************************************************
---************ CREATE TABLE topics_invited_users ************
---************************************************************
+-- ************************************************************
+-- ************ CREATE TABLE topics_invited_users ************
+-- ************************************************************
 
 CREATE TABLE topics_invited_users(
 	topic_id INT UNSIGNED NOT NULL,
@@ -216,9 +230,9 @@ CREATE TABLE topics_invited_users(
 
 
 
---***********************************************************
+-- ***********************************************************
 --     *** *** *** *** ADDITIONAL *** *** *** *** ***
---***********************************************************
+-- ***********************************************************
 
 -- *** TRIGGER: prevent username column change
 DELIMITER //
