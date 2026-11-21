@@ -32,11 +32,12 @@ def delete_reply(user_id: int, reply_id, role: str) -> bool | None:
         return False
     return replies_repository.delete_reply(reply_id)
 
-def update_reply(user_id: int , reply_id: int, data: str):
+def update_reply(user_id: int , reply_id: int, data: ReplyResponse) -> ReplyResponse | bool | None:
     reply = get_reply(reply_id)
     if reply is None:
         return None
     if reply.author_id != user_id:
         return False
     #TODO: need to write a users_service.get_user check to see if user is blocked here
-    return replies_repository.update_reply(reply_id,data)
+    replies_repository.update_reply(reply_id)
+    return get_reply(reply_id)
