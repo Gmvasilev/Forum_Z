@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS `reactions` (
 -- Dumping structure for table forum_z_db.refresh_tokens
 CREATE TABLE IF NOT EXISTS `refresh_tokens` (
   `user_id` int(10) unsigned NOT NULL,
-  `token_hash` varchar(64) NOT NULL,
-  `expires_at` datetime NOT NULL,
+  `token_hash` varchar(64) DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
   `is_revoked` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `uq_token_hash` (`token_hash`),
