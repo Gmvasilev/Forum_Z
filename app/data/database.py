@@ -1,8 +1,8 @@
 # TODO: MariaDB connection / pool
 import re
 from contextlib import contextmanager, nullcontext
-from collections.abc import Generator  
 from mariadb import Connection, connect, Error
+
 
 from app.config import settings
 from exceptions.database_validation_error import DatabaseValidationError
@@ -29,10 +29,18 @@ def read_query(sql: str, sql_params=(), contx_session: Connection=None) -> list[
     )
     
     with connection_provider as conn:
-        cursor = conn.cursor()
-        cursor.execute(sql, sql_params)
+        try:
+            cursor = conn.cursor()
+            cursor.execute(sql, sql_params)
 
-        return list(cursor)
+            return list(cursor)
+        
+        except Error as e:
+            user_friendly_msg = _parse_mariadb_error(e)
+            raise DatabaseValidationError(user_friendly_msg) from e
+    
+        finally:
+            cursor.close()
 
 
 def insert_query(sql: str, sql_params=(), contx_session: Connection=None) -> int:
@@ -45,13 +53,21 @@ def insert_query(sql: str, sql_params=(), contx_session: Connection=None) -> int
     )
     
     with connection_provider as conn:
-        cursor=conn.cursor()
-        cursor.execute(sql, sql_params)
+        try:
+            cursor = conn.cursor()
+            cursor.execute(sql, sql_params)
         
-        if contx_session is None:
-            conn.commit()
+            if contx_session is None:
+                conn.commit()
 
-        return cursor.lastrowid
+            return cursor.lastrowid
+        
+        except Error as e:
+            user_friendly_msg = _parse_mariadb_error(e)
+            raise DatabaseValidationError(user_friendly_msg) from e
+        
+        finally:
+            cursor.close()
 
 
 def update_query(sql:str, sql_params=(), contx_session: Connection=None) -> bool:
@@ -64,13 +80,21 @@ def update_query(sql:str, sql_params=(), contx_session: Connection=None) -> bool
     )
     
     with connection_provider as conn:
-        cursor = conn.cursor()
-        cursor.execute(sql, sql_params)
-        
-        if contx_session is None:
-            conn.commit()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(sql, sql_params)
+            
+            if contx_session is None:
+                conn.commit()
 
-        return cursor.rowcount > 0
+            return cursor.rowcount > 0
+        
+        except Error as e:
+            user_friendly_msg = _parse_mariadb_error(e)
+            raise DatabaseValidationError(user_friendly_msg) from e
+        
+        finally:
+            cursor.close()
 
 
 def delete_query(sql: str, sql_params=(), contx_session: Connection=None) -> bool:
@@ -83,17 +107,26 @@ def delete_query(sql: str, sql_params=(), contx_session: Connection=None) -> boo
     )
     
     with connection_provider as conn:
-        cursor = conn.cursor()
-        cursor.execute(sql, sql_params)
-        
-        if contx_session is None:
-            conn.commit()
+        try:
+                
+            cursor = conn.cursor()
+            cursor.execute(sql, sql_params)
+            
+            if contx_session is None:
+                conn.commit()
 
-        return cursor.rowcount > 0
-    
+            return cursor.rowcount > 0
+        
+        except Error as e:
+            user_friendly_msg = _parse_mariadb_error(e)
+            raise DatabaseValidationError(user_friendly_msg) from e
+        
+        finally:
+            cursor.close()
+
     
 @contextmanager
-def start_transaction() -> Generator[Connection]:
+def start_transaction():
     """
     Open an atomic database transaction using a context manager.
     
@@ -112,47 +145,54 @@ def start_transaction() -> Generator[Connection]:
         except Exception:
             conn.rollback()
             raise
-        
-        
-# 
     
+
 def _parse_mariadb_error(e: Error) -> str:
     """
-    Parses MariaDB constraints by scanning the error text directly for 
-    known technical prefixes, extracting only the underlying column name.
+    Parse MariaDB exceptions and translate strict constraint violations 
+    into clean, user-friendly messages.
     """
-    error_text = e.errmsg
+    # Safe extraction of error attributes
+    error_text = e.errmsg if hasattr(e, 'errmsg') else str(e)
+    error_code = e.errno if hasattr(e, 'errno') else None
 
-    # 1. UNIQUE Violations (Error 1062)
-    if e.errno == 1062:
-        # Search word starting with 'uq_' (ex: 'uq_username' or 'uq_email')
+    # 1. UNIQUE CONSTRAINT VIOLATION (e.g., uq_username, uq_email)
+    if error_code == 1062:
+        # Scan for any word boundary starting with 'uq_' prefix
         match = re.search(r"\b(uq_[a-zA-Z0-9_]+)\b", error_text)
         if match:
-            # Extract constraint name (removing table name if present)
+            # Drop table prefix if present, then strip the 'uq_' prefix
             constraint_name = match.group(1).split('.')[-1]
-            # Remove 'uq_' from start
             column_name = re.sub(r'^uq_', '', constraint_name)
             return f"The {column_name} is already taken."
-        
         return "A unique constraint validation failed."
 
-    # 2. CHECK Violations (Error 4025)
-    elif e.errno == 4025:
-        # Searching word starting with 'chck_' (ex: chck_firstname_length')
+    # 2. CHECK CONSTRAINT VIOLATION (e.g., chck_firstname_length)
+    elif error_code == 4025:
+        # Scan for any word boundary starting with 'chck_' prefix
         match = re.search(r"\b(chck_[a-zA-Z0-9_]+)\b", error_text)
         if match:
             constraint_name = match.group(1)
-            # Remov 'chck_' from start
             column_name = re.sub(r'^chck_', '', constraint_name)
-            
-            # Remove '_length' from end:
+            # Remove common suffix to isolate the pure column name
             clean_column = re.sub(r'_length$', '', column_name)
-            
-            return f"The value provided for {clean_column} does not meet the requirements."
-        
-        return "A data constraint validation failed."
+            return f"The value provided for {clean_column} is invalid."
+        return "A database check constraint validation failed."
 
-    return f"A database error occurred (Code: {e.errno})."
+    # 3. FOREIGN KEY VIOLATION (Relational data integrity locks)
+    elif error_code in (1216, 1217, 1451, 1452):
+        if "delete" in error_text.lower() or "update" in error_text.lower():
+            return "This record cannot be modified or deleted as it is linked to other data."
+        return "The referenced parent record does not exist."
+
+    # 4. INFRASTRUCTURE & CRITICAL DATABASE CRASHES
+    elif error_code in (2002, 2003, 2006, 2013):
+        return "The database server is currently unavailable. Please try again later."
+
+    # 5. GLOBAL FALLBACK FOR UNHANDLED ERRORS
+    return "A database error occurred. Please contact support."
+
+
 
 
 #! KEEPING THIS JUNK UNTIL I have everything replacing it tested
