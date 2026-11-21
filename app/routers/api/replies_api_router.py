@@ -27,8 +27,8 @@ def create_reply(topic_id: int, data: ReplyCreate, current_user: dict = Depends(
     #topic_is locked validation still needs to be writen
     return replies_service.create_reply(topic_id,data,current_user["user_id"])
 
-@replies_api_router.delete("/replies/{treply_id}", stuatus_code=status.HTTP_204_No_CONTENT)
-def delete_reply(reply_id: int,current_user):
+@replies_api_router.delete("/replies/{reply_id}", stuatus_code=status.HTTP_204_No_CONTENT)
+def delete_reply(reply_id: int,current_user: dict):
     #need a current_user function to implement the check for the author
     result = replies_service.delete_reply(current_user["user_id"], reply_id, current_user["role"])
 
@@ -36,3 +36,14 @@ def delete_reply(reply_id: int,current_user):
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Reply not Found")
     if result is False:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Not allowed to delete this reply")
+
+@replies_api_router.patch("/replies/{reply_id}", response_model=ReplyResponse)
+def update_reply(reply_id: int, data: ReplyUpdate, current_user: dict):
+    result = replies_service.update_reply(current_user["user_id"], reply_id, data)
+
+    if result is None:
+        raise HTTPException(404, detail="Reply not found")
+    if result is False:
+        raise HTTPException(403, detail="You can only edit your own replies")
+
+    return result
