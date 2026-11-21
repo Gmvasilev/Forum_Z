@@ -1,11 +1,18 @@
 # TODO: MariaDB connection / pool
 import re
+from enum import Enum
 from contextlib import contextmanager, nullcontext
 from mariadb import Connection, connect, Error
 
 
 from app.config import settings
 from exceptions.database_validation_error import DatabaseValidationError
+
+
+class QueryMode(Enum):
+    FETCH = "fetch"
+    LASTROWID = "lastrowid"
+    ROWCOUNT = "rowcount"
 
 
 def _get_connection() -> Connection:
@@ -17,10 +24,19 @@ def _get_connection() -> Connection:
         port=settings.db_port,
         database=settings.db_name
     )
-
-
-def read_query(sql: str, sql_params=(), connection: Connection=None) -> list[tuple]:
-    """ Returns list of table rows as tuples"""
+    
+    
+def _execute(
+    sql: str,
+    sql_params: tuple,
+    connection: Connection | None,
+    mode: QueryMode
+):
+    """
+    Execute a SQL statement and return a result based on the given mode.
+    FETCH -> list of row tuples, LASTROWID -> generated id, ROWCOUNT -> bool.
+    If no connection is provided, opens one and auto-commits.
+    """
     
     connection_provider = (
         _get_connection()
@@ -33,96 +49,50 @@ def read_query(sql: str, sql_params=(), connection: Connection=None) -> list[tup
             cursor = conn.cursor()
             cursor.execute(sql, sql_params)
 
-            return list(cursor)
-        
-        except Error as e:
-            user_friendly_msg = _parse_mariadb_error(e)
-            raise DatabaseValidationError(user_friendly_msg) from e
-    
-        finally:
-            cursor.close()
-
-
-def insert_query(sql: str, sql_params=(), connection: Connection=None) -> int:
-    """ Returns the last row generated id."""
-    
-    connection_provider = (
-        _get_connection()
-        if connection is None
-        else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
-    )                                # the connection is safely closed from start_stransaction()
-    
-    with connection_provider as conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute(sql, sql_params)
-        
-            if connection is None:
+            if connection is None and mode != QueryMode.FETCH:
                 conn.commit()
-
-            return cursor.lastrowid
-        
-        except Error as e:
-            user_friendly_msg = _parse_mariadb_error(e)
-            raise DatabaseValidationError(user_friendly_msg) from e
-        
-        finally:
-            cursor.close()
-
-
-def update_query(sql:str, sql_params=(), conection: Connection=None) -> bool:
-    """ Returns any row affected ?"""
-    
-    connection_provider = (
-        _get_connection()
-        if conection is None
-        else nullcontext(conection) # nullcontext wraps the connecion taking the hit from the current with block end
-    )                               # the connection is safely closed from start_stransaction()
-    
-    with connection_provider as conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute(sql, sql_params)
-            
-            if conection is None:
-                conn.commit()
-
-            return cursor.rowcount > 0
-        
-        except Error as e:
-            user_friendly_msg = _parse_mariadb_error(e)
-            raise DatabaseValidationError(user_friendly_msg) from e
-        
-        finally:
-            cursor.close()
-
-
-def delete_query(sql: str, sql_params=(), connection: Connection=None) -> bool:
-    """ Returns any row affected ?"""
-    
-    connection_provider = (
-        _get_connection()
-        if connection is None
-        else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
-    )                                # the connection is safely closed from start_stransaction()
-    
-    with connection_provider as conn:
-        try:
                 
-            cursor = conn.cursor()
-            cursor.execute(sql, sql_params)
-            
-            if connection is None:
-                conn.commit()
-
-            return cursor.rowcount > 0
+            if mode == QueryMode.FETCH:
+                return list(cursor)
+            elif mode == QueryMode.LASTROWID:
+                return cursor.lastrowid
+            elif mode == QueryMode.ROWCOUNT:
+                return cursor.rowcount > 0
+            return cursor
         
         except Error as e:
+            
             user_friendly_msg = _parse_mariadb_error(e)
             raise DatabaseValidationError(user_friendly_msg) from e
-        
+    
         finally:
             cursor.close()
+    
+
+
+def read_query(sql, sql_params=(), connection=None) -> list[tuple]:
+    """Returns all matching rows as a list of tuples."""
+    
+    return _execute(sql, QueryMode.FETCH, sql_params, connection)
+
+
+def insert_query(sql, sql_params=(), connection=None) -> int:
+    """Returns the generated primary key id."""
+    
+    return _execute(sql, QueryMode.LASTROWID, sql_params, connection)
+
+
+def update_query(sql, sql_params=(), connection=None) -> bool:
+    """Returns True if at least one row was affected."""
+    
+    return _execute(sql, QueryMode.ROWCOUNT, sql_params, connection)
+
+
+def delete_query(sql, sql_params=(), connection=None) -> bool:
+    """Returns True if at least one row was affected."""
+    
+    return _execute(sql, QueryMode.ROWCOUNT, sql_params, connection)
+
 
     
 @contextmanager
@@ -137,7 +107,7 @@ def start_transaction():
         mariadb.Connection: The active transactional connection session.
     """
     with _get_connection() as conn:
-        conn.autocommit = False
+        conn.autocommit = False # Must be set before any statement executes
         try:
             yield conn  # Hand over the connection to the'with' block
             # EVERYTHING BELOW EXECUTES AFTER THE CALLER WITH BLOCK FINISHES
@@ -196,6 +166,88 @@ def _parse_mariadb_error(e: Error) -> str:
 
 
 #! KEEPING THIS JUNK UNTIL I have everything replacing it tested
+
+#! OLD QUERIES
+# def read_query(sql: str, sql_params=(), connection: Connection=None) -> list[tuple]:
+#     """ Returns list of table rows as tuples"""
+    
+#     connection_provider = (
+#         _get_connection()
+#         if connection is None
+#         else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
+#     )                                # the connection is safely closed from start_stransaction()
+    
+#     with connection_provider as conn:
+#         try:
+#             cursor = conn.cursor()
+#             cursor.execute(sql, sql_params)
+
+#             return list(cursor)
+        
+#         except Error as e:
+#             user_friendly_msg = _parse_mariadb_error(e)
+#             raise DatabaseValidationError(user_friendly_msg) from e
+    
+#         finally:
+#             cursor.close()
+
+
+# def insert_query(sql: str, sql_params=(), connection: Connection=None) -> int:
+#     """ Returns the last row generated id."""
+    
+#     connection_provider = (
+#         _get_connection()
+#         if connection is None
+#         else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
+#     )                                # the connection is safely closed from start_stransaction()
+    
+#     with connection_provider as conn:
+#         try:
+#             cursor = conn.cursor()
+#             cursor.execute(sql, sql_params)
+        
+#             if connection is None:
+#                 conn.commit()
+
+#             return cursor.lastrowid
+        
+#         except Error as e:
+#             user_friendly_msg = _parse_mariadb_error(e)
+#             raise DatabaseValidationError(user_friendly_msg) from e
+        
+#         finally:
+#             cursor.close()
+
+
+# def update_query(sql:str, sql_params=(), conection: Connection=None) -> bool:
+#     """ Returns any row affected ?"""
+    
+#     connection_provider = (
+#         _get_connection()
+#         if conection is None
+#         else nullcontext(conection) # nullcontext wraps the connecion taking the hit from the current with block end
+#     )                               # the connection is safely closed from start_stransaction()
+    
+#     with connection_provider as conn:
+#         try:
+#             cursor = conn.cursor()
+#             cursor.execute(sql, sql_params)
+            
+#             if conection is None:
+#                 conn.commit()
+
+#             return cursor.rowcount > 0
+        
+#         except Error as e:
+#             user_friendly_msg = _parse_mariadb_error(e)
+#             raise DatabaseValidationError(user_friendly_msg) from e
+        
+#         finally:
+#             cursor.close()
+
+
+
+
 # def insert_one_to_one_records(
 #     main_table_data: tuple[str, tuple],
 #     second_table_data: tuple[str, tuple]
