@@ -6,26 +6,63 @@ from data.database import (
     start_transaction
 )
 
+from typing import Any
 from datetime import datetime
 from exceptions.database_validation_error import DatabaseValidationError
 
+DEFAULT_USER_ROLE = "user"
 
-def register_full_user_profile(main_data, details_data, update_data):
+def insert(user_data: dict[str, Any]):
+    """
+    Register a new user and their refresh token atomically.
+    user_data keys: first_name, last_name, username, email, password_hash
+    """
     
     with start_transaction() as connection:
         
-        user_id = insert_query("INSERT INTO table_one...", main_data, connection)
+        # 1. Insert User
+        generated_user_id = insert_query(
+            """
+            INSERT INTO 
+                users(
+                    first_name,
+                    last_name,
+                    username,
+                    email,
+                    password_hash,
+                    user_role_id
+                )
+            VALUES
+                (?,?,?,?,?,
+                    (SELECT user_role_id FROM user_roles WHERE user_role = ?)
+                )
+            """, 
+            (
+                user_data["first_name"],
+                user_data["last_name"],
+                user_data["username"],
+                user_data["email"],
+                user_data["password_hash"],
+                DEFAULT_USER_ROLE
+            ),
+            connection
+        )
         
-        full_details = (user_id,) + details_data
-        insert_query("INSERT INTO table_two...", full_details, connection)
-        # second_table_params = (generated_id,) + second_table_data[1]
-        
-        is_updated = update_query("UPDATE table_three...", update_data, connection)
-        
-        if not is_updated:
-            raise DatabaseValidationError("Critical profile update step failed.")
-            
-    return user_id
+        # 2. Insert refresh token
+        insert_query(
+            """
+            INSERT INTO
+                refresh_tokens(
+                    user_id
+                )
+            VALUES
+                (?)
+            """,
+            (generated_user_id, ),
+            connection
+        )
+ 
+    return generated_user_id
 
 
 
