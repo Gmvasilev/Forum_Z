@@ -25,8 +25,8 @@ def read_query(sql: str, sql_params=(), connection: Connection=None) -> list[tup
     connection_provider = (
         _get_connection()
         if connection is None
-        else nullcontext(connection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
-    )
+        else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
+    )                                # the connection is safely closed from start_stransaction()
     
     with connection_provider as conn:
         try:
@@ -49,8 +49,8 @@ def insert_query(sql: str, sql_params=(), connection: Connection=None) -> int:
     connection_provider = (
         _get_connection()
         if connection is None
-        else nullcontext(connection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
-    )
+        else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
+    )                                # the connection is safely closed from start_stransaction()
     
     with connection_provider as conn:
         try:
@@ -76,8 +76,8 @@ def update_query(sql:str, sql_params=(), conection: Connection=None) -> bool:
     connection_provider = (
         _get_connection()
         if conection is None
-        else nullcontext(conection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
-    )
+        else nullcontext(conection) # nullcontext wraps the connecion taking the hit from the current with block end
+    )                               # the connection is safely closed from start_stransaction()
     
     with connection_provider as conn:
         try:
@@ -103,8 +103,8 @@ def delete_query(sql: str, sql_params=(), connection: Connection=None) -> bool:
     connection_provider = (
         _get_connection()
         if connection is None
-        else nullcontext(connection) # nullcontext wraps the sessioncontext taking the hit from the current with block end
-    )
+        else nullcontext(connection) # nullcontext wraps the connecion taking the hit from the current with block end
+    )                                # the connection is safely closed from start_stransaction()
     
     with connection_provider as conn:
         try:
