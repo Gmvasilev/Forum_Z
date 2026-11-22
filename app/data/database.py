@@ -5,8 +5,8 @@ from contextlib import contextmanager, nullcontext
 from mariadb import Connection, connect, Error
 
 
-from app.config import settings
-from exceptions.database_validation_error import DatabaseValidationError
+from config import settings
+from exceptions.database_errors import DatabaseValidationError
 
 
 class QueryMode(Enum):
@@ -73,26 +73,36 @@ def _execute(
 def read_query(sql, sql_params=(), connection=None) -> list[tuple]:
     """Returns all matching rows as a list of tuples."""
     
-    return _execute(sql, QueryMode.FETCH, sql_params, connection)
+    return _execute(sql, sql_params, connection, QueryMode.FETCH)
 
 
 def insert_query(sql, sql_params=(), connection=None) -> int:
     """Returns the generated primary key id."""
     
-    return _execute(sql, QueryMode.LASTROWID, sql_params, connection)
+    return _execute(sql, sql_params, connection, QueryMode.LASTROWID)
 
 
 def update_query(sql, sql_params=(), connection=None) -> bool:
     """Returns True if at least one row was affected."""
     
-    return _execute(sql, QueryMode.ROWCOUNT, sql_params, connection)
+    return _execute(sql, sql_params, connection,  QueryMode.ROWCOUNT)
 
 
 def delete_query(sql, sql_params=(), connection=None) -> bool:
     """Returns True if at least one row was affected."""
     
-    return _execute(sql, QueryMode.ROWCOUNT, sql_params, connection)
+    return _execute(sql, sql_params, connection, QueryMode.ROWCOUNT)
 
+def exists_query(sql, sql_params=(), connection=None) -> bool:
+    """Returns True if the record exists, False otherwise."""
+    result = _execute(sql, sql_params, connection, QueryMode.FETCH)
+    
+    # no result 
+    if not result or not result[0]:
+        return False
+        
+    # for SELECT EXISTS queries
+    return bool(result[0][0])
 
     
 @contextmanager

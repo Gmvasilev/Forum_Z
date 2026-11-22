@@ -7,15 +7,15 @@ from data.database import (
 )
 
 from typing import Any
-from datetime import datetime
-from exceptions.database_validation_error import DatabaseValidationError
+from app.exceptions.database_errors import DatabaseValidationError
 
 DEFAULT_USER_ROLE = "user"
+
 
 def insert(user_data: dict[str, Any]):
     """
     Register a new user and their refresh token atomically.
-    user_data keys: first_name, last_name, username, email, password_hash
+    user_data keys: first_name, last_name, username, email, password(hash)
     """
     
     with start_transaction() as connection:
@@ -42,13 +42,13 @@ def insert(user_data: dict[str, Any]):
                 user_data["last_name"],
                 user_data["username"],
                 user_data["email"],
-                user_data["password_hash"],
+                user_data["password"],
                 DEFAULT_USER_ROLE
             ),
             connection
         )
         
-        # 2. Insert refresh token
+        # 2. Insert refresh token 
         insert_query(
             """
             INSERT INTO
@@ -66,22 +66,30 @@ def insert(user_data: dict[str, Any]):
 
 
 
-def get_user_by_username(username: str):
-    #TODO return [user_id, username, password_hash,  role]
+def get_user_by_username(username: str) -> tuple:
+    """Returns (user_id, username, password_hash, user_role)\n
+        or None if NOT found."""
     
+    user_row = insert_query(
+        """
+        SELECT
+            u.user_id,
+            u.username,
+            u.password_hash,
+            u_r.user_role
+        FROM
+            users u
+        JOIN
+            user_roles u_r on u.user_role_id = u_r.user_role_id
+        WHERE username = ?
+        """, 
+        (username)
+    )
     
-    #return None #On failure
-    return []
-
-def update_refresh_token(
-    user_id: int,
-    token_hash: str,
-    expires_at: datetime
-) -> None:
-    """Update the user's refresh token and expiration."""
-    pass
-
-
-def revoke_refresh_token(user_id: int) -> None:
-    """Mark the user's refresh token as revoked."""
-    pass
+    if not user_row[0]: # No result
+        return None
+    
+    print(user_row)
+    
+    return user_row[0]
+    
