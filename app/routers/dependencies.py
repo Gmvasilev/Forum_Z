@@ -71,4 +71,4 @@ def get_current_user(
         "user_id": user_id,
         "username": username,
         "role": role
-        }
+    }

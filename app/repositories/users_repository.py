@@ -7,7 +7,7 @@ from data.database import (
 )
 
 from typing import Any
-from app.exceptions.database_errors import DatabaseValidationError
+from exceptions.database_errors import DatabaseValidationError
 
 DEFAULT_USER_ROLE = "user"
 
@@ -70,7 +70,7 @@ def get_user_by_username(username: str) -> tuple:
     """Returns (user_id, username, password_hash, user_role)\n
         or None if NOT found."""
     
-    user_row = insert_query(
+    user_row = read_query(
         """
         SELECT
             u.user_id,
@@ -83,7 +83,7 @@ def get_user_by_username(username: str) -> tuple:
             user_roles u_r on u.user_role_id = u_r.user_role_id
         WHERE username = ?
         """, 
-        (username)
+        (username, )
     )
     
     if not user_row[0]: # No result

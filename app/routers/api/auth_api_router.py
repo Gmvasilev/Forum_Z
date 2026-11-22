@@ -1,8 +1,10 @@
 
 from typing import Annotated
-from fastapi import APIRouter, HTTPException, status, Cookie, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Cookie, Response
+from fastapi.security import OAuth2PasswordRequestForm
 from models.user_models import UserLogin
-from services import auth_service 
+from services import auth_service
+from services.auth_service import REFRESH_TOKEN_LIFETIME_IN_SECONDS
 
 
 auth_api_router = APIRouter(prefix="/api/sessions", tags=["Authentication"])
@@ -18,15 +20,13 @@ UNATHORIZED_HTTP_EXCEPTION = HTTPException(
 # -- Login --
 @auth_api_router.post("", response_model=dict)
 def login(
-    response: Response,
-    user_credentials: UserLogin
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    response: Response
 ):
-    
-    #user_credentials.
-
+        
     result = auth_service.login(
-        user_credentials.username,
-        user_credentials.password
+        form_data.username,
+        form_data.password
     )
     
     if result is None:
@@ -35,6 +35,7 @@ def login(
             detail="Invalid username or password"
         )
     
+    
     access_token, refresh_token = result
     
     response.set_cookie(
@@ -42,14 +43,13 @@ def login(
         value=refresh_token,
         httponly=True,
         samesite="lax",
-        max_age=30 * 24 * 60 * 60 # 30 days
+        max_age=REFRESH_TOKEN_LIFETIME_IN_SECONDS,
+        path= "/api/sessions/current" # send the cookie only when this is the path
     )
     
-    response.set_cookie("refresh_token",refresh_token)
-    
     return {
-    "access_token": access_token,
-    "token_type": "bearer"
+        "access_token": access_token,
+        "token_type": "bearer"
     }
     
     
@@ -67,9 +67,6 @@ def refresh_access_token(
     
     if access_token is None:
         raise UNATHORIZED_HTTP_EXCEPTION
-    # check if hash values match with the database 
-    # expired ?
-    # or revoked ?
     
     return {
         "access_token": access_token,
@@ -83,7 +80,7 @@ def logout(
     response: Response,
     refresh_token: Annotated[str | None, Cookie()] = None
 ):
-    
+    """Deletes th"""
     
     # try set the refresh_token to revoked_true
     response.delete_cookie("refresh_token")

@@ -1,4 +1,5 @@
 from data.database import (
+    read_query,
     update_query,
     exists_query
 )
@@ -41,15 +42,21 @@ def deactivate_refresh_token(refresh_token_hash: str):
     )
     
     
-def validate_refresh_token(refresh_token_hash: str, current_time: datetime) -> bool:
-    """Returns that the token was found, not expired, and not revoked"""
+def validate_refresh_token(refresh_token_hash: str, current_time: datetime) -> tuple | None:
+    """Returns the user(id, username, role) if the token is valid, else None"""
     
-    return  exists_query(
+    res = read_query(
         """
         SELECT
-            1 
+            u.user_id,
+            u.username,
+            u_r.user_role
         FROM
-            refresh_tokens 
+            refresh_tokens r_t
+        JOIN
+            users u ON r_t.user_id = u.user_id
+        JOIN
+            user_roles u_r ON u.user_role_id = u_r.user_role_id
         WHERE
             token_hash = ? 
         AND expires_at > ?
@@ -58,6 +65,7 @@ def validate_refresh_token(refresh_token_hash: str, current_time: datetime) -> b
         (refresh_token_hash, current_time, )
     )
     
+    return res[0] or None
     
     
     
