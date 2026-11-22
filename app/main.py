@@ -7,6 +7,7 @@ import uvicorn
 from routers.api.replies_api_router import replies_api_router
 from routers.api.topics_api_router import topics_api_router
 from routers.api.users_api_router import users_api_router
+from routers.api.auth_api_router import auth_api_router
 # todo: import reactions_api_router
 
 from routers.web.home_router import home_router
@@ -26,6 +27,7 @@ app = FastAPI(title="Forum Z")
 app.include_router(replies_api_router)
 app.include_router(topics_api_router)
 app.include_router(users_api_router)
+app.include_router(auth_api_router)
 # todo: reactions_api_router
 
 # *** WEB Routers ***

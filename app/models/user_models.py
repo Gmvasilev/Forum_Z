@@ -84,14 +84,19 @@ PasswordLogin = Annotated[
 
 # --- Mixin class for multiple inheritance to achieve id as first attribute. ---
 
-class UserIn(BaseModel):
+
+class UserIdMixin(BaseModel):
+    user_id: PositiveId
+    
+class UserBase(BaseModel):
     first_name: FirstName
     last_name: LastName
     username: Username
     email: Email
+
+class UserIn(UserBase):
     password: PasswordCreate
-    confirm_password: PasswordCreate
-    
+    #todo add password_confirm checked in the front end
     
 class UserBaseOut(BaseModel):
     """ User public view """
@@ -100,15 +105,12 @@ class UserBaseOut(BaseModel):
 
 
 
-class UserIdMixin(BaseModel):
-    user_id: PositiveId
 
 
 
-    
-    
-class UserOut(UserIdMixin, UserBase):
+class UserOut(UserIdMixin, UserBaseOut):
     pass
+
 
 class UserWithPostsOut(UserOut):
     posts_ids: list[int] #TODO: list of Posts with id + title
