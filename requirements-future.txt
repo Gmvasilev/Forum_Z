@@ -6,3 +6,4 @@ mariadb -> included
 unittest -> part of standard Python package
 bcrypt -> included
 pyjwt -> included
+python-multipart -> included

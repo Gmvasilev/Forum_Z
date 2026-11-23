@@ -3,7 +3,7 @@ from fastapi import Depends, Cookie
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError,ExpiredSignatureError 
 
-from helpers.security import decode_access_token
+from services import auth_service
 
 
 
@@ -45,7 +45,7 @@ def get_current_user(
     token = header_token or cookie_token
     
     try:
-        payload = decode_access_token(token)
+        payload = auth_service.decode_access_token(token)
         
     except ExpiredSignatureError: # if this happens redirect user to the refresh endpoint and back to where he was
         #TODO: refactor to raise custom exception AccessTokenExpired
@@ -71,4 +71,4 @@ def get_current_user(
         "user_id": user_id,
         "username": username,
         "role": role
-        }
+    }

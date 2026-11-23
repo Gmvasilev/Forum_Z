@@ -10,10 +10,9 @@ from fastapi import (
 )
 
 from typing import Annotated
-from models.user_models import UserRegister
+from models.user_models import UserIn, UserOut
 from routers.dependencies import get_current_user
-from app.models.user_models import UserLogin, UserOut
-from services import users_service
+from services import users_service, auth_service
 
 
 users_api_router = APIRouter(prefix="/api/users", tags=["Users"])
@@ -35,9 +34,9 @@ UNATHORIZED_HTTP_EXCEPTION = HTTPException(
 
 
 
-# --- Show certain user Topics & Replies
-@users_api_router.get("/{username}")
-def 
+# # --- Show certain user Topics & Replies
+# @users_api_router.get("/{username}")
+# def 
 
 
 # ---------------------------------------------------------------------------
@@ -46,9 +45,16 @@ def
 
 
 # --- Create User ---
-@users_api_router.post("", status_code=status.HTTP_201_CREATED)
-def register(new_user: UserRegister):
-    pass
+# Try to insert and catch unique columns violation error
+@users_api_router.post("", response_model= UserOut)
+def register(new_user: UserIn):
+    
+    new_user.password = auth_service.hash_password(new_user.password.get_secret_value())
+    #todo try/except: DBError
+    return users_service.create(new_user)
+    
+    
+    
 
 # --- Search by username, email, or first name 
 @users_api_router.get("", response_model=list[UserOut])
@@ -97,10 +103,10 @@ def delete_current_user():
 
 # -- Delete User --
 @users_api_router.delete("/{user_id}")
-def delete_user():
+def admin_only_delete_user():
     
     # check for admin rights
     # soft delete user
-
+    pass
 
 

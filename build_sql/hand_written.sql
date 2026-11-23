@@ -105,8 +105,8 @@ CREATE TABLE users(
 
 CREATE TABLE refresh_tokens(
     user_id INT UNSIGNED NOT NULL,
-    token_hash VARCHAR(64) NOT NULL,
-    expires_at DATETIME NOT NULL,
+    token_hash VARCHAR(64),
+    expires_at DATETIME,
     is_revoked BOOL NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (user_id),
