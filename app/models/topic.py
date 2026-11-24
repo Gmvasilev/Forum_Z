@@ -27,7 +27,7 @@ class TopicLockRequest(StrictInput):
     is_locked: StrictBool
 
 
-class TopicVisibility(StrictInput):
+class TopicVisibilityRequest(StrictInput):
     is_private: StrictBool
 
 
