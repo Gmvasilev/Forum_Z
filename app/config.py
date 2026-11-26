@@ -9,8 +9,9 @@ class Settings(BaseSettings):
     db_name: str
 
     secret_key: str
-    algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    algorithm: str
+    access_token_expire_minutes: int
+    refresh_token_expire_in_seconds: int
 
     model_config = SettingsConfigDict(env_file=".env")
 
