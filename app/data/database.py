@@ -93,6 +93,7 @@ def delete_query(sql, sql_params=(), connection=None) -> bool:
     
     return _execute(sql, sql_params, connection, QueryMode.ROWCOUNT)
 
+
 def exists_query(sql, sql_params=(), connection=None) -> bool:
     """Returns True if the record exists, False otherwise."""
     result = _execute(sql, sql_params, connection, QueryMode.FETCH)

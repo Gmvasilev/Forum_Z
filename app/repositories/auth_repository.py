@@ -42,7 +42,7 @@ def deactivate_refresh_token(refresh_token_hash: str):
     )
     
     
-def validate_refresh_token(refresh_token_hash: str, current_time: datetime) -> tuple | None:
+def validate_refresh_token(user_id: int, refresh_token_hash: str, current_time: datetime) -> tuple | None:
     """Returns the user(id, username, role) if the token is valid, else None"""
     
     res = read_query(
@@ -58,11 +58,12 @@ def validate_refresh_token(refresh_token_hash: str, current_time: datetime) -> t
         JOIN
             user_roles u_r ON u.user_role_id = u_r.user_role_id
         WHERE
-            token_hash = ? 
-        AND expires_at > ?
-        AND is_revoked = FALSE
+            u.user_id = ?
+        AND r_t.token_hash = ? 
+        AND r_t.expires_at > ?
+        AND r_t.is_revoked = FALSE
         """,
-        (refresh_token_hash, current_time, )
+        (user_id, refresh_token_hash, current_time, )
     )
     
     return res[0] or None

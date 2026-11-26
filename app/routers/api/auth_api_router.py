@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Cookie, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from models.user_models import UserLogin
 from services import auth_service
-from services.auth_service import REFRESH_TOKEN_LIFETIME_IN_SECONDS
-
+from config import settings
 
 auth_api_router = APIRouter(prefix="/api/sessions", tags=["Authentication"])
 
@@ -18,7 +17,7 @@ UNATHORIZED_HTTP_EXCEPTION = HTTPException(
 
 
 # -- Login --
-@auth_api_router.post("", response_model=dict)
+@auth_api_router.post("", status_code=status.HTTP_201_CREATED)
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     response: Response
@@ -39,39 +38,43 @@ def login(
     access_token, refresh_token = result
     
     response.set_cookie(
+        key="access_token",
+        value = access_token,
+        httponly=True,
+        samesite="lax",
+        max_age=settings.access_token_expire_minutes
+    )
+    
+    response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         samesite="lax",
-        max_age=REFRESH_TOKEN_LIFETIME_IN_SECONDS,
-        path= "/api/sessions/current" # send the cookie only when this is the path
+        max_age=settings.refresh_token_expire_secconds
+        # path= "/api/sessions/current" # send the cookie only when this is the path
     )
     
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
     
     
 # -- Refresh Auth Token
-@auth_api_router.post("/current", response_model = str)
-def refresh_access_token(
-    refresh_token: Annotated[str | None, Cookie()] = None
-):
-    """Refresh the current authentication session."""
+# @auth_api_router.post("/current", response_model = str)
+# def refresh_access_token(
+#     refresh_token: Annotated[str | None, Cookie()] = None
+# ):
+#     """Refresh the current authentication session."""
     
-    if refresh_token is None:
-        raise UNATHORIZED_HTTP_EXCEPTION
+#     if refresh_token is None:
+#         raise UNATHORIZED_HTTP_EXCEPTION
     
-    access_token = auth_service.refresh(refresh_token)
+#     access_token = auth_service.refresh(refresh_token)
     
-    if access_token is None:
-        raise UNATHORIZED_HTTP_EXCEPTION
+#     if access_token is None:
+#         raise UNATHORIZED_HTTP_EXCEPTION
     
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-        }
+#     return {
+#         "access_token": access_token,
+#         "token_type": "bearer"
+#         }
 
     
 # -- Logout --

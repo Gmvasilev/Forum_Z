@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    refresh_token_expire_secconds: int = 30 * 24 * 60 * 60 # 30 days
 
     model_config = SettingsConfigDict(env_file=".env")
 
